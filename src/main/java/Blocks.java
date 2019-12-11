@@ -34,8 +34,11 @@ public class Blocks implements Cloneable{
         Blocks clone = (Blocks) super.clone();
         Block[] cloneArray = new Block[25];
 
+
         for (int i = 0; i < blocks.length; i++) {
-            cloneArray[i] = (Block) blocks[i].clone();
+            Block temp = (Block) blocks[i].clone();
+            temp.resetAll();
+            cloneArray[i] = temp;
         }
 
         clone.blocks = cloneArray;

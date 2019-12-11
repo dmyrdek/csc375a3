@@ -1,34 +1,59 @@
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.RecursiveAction;
 
-public class Solutions{
+public class Solutions extends RecursiveAction {
+    private Grid grid;
     private static volatile ArrayList<ArrayList<Block>> allBlockNeighbors = new ArrayList<>();
     private boolean done = false;
     int count = 0;
+    Map<Integer,ArrayList<Move>> moves = new HashMap<>();
     int blocksLeft = 0;
+    private ArrayList<Integer> previousColors = new ArrayList<>();
 
-    public Solutions() {
+    public Solutions(Grid g) {
+        try {
+            this.grid = (Grid) g.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+
+        for (int i = 0; i<25; i++){
+            moves.put(i,new ArrayList<>());
+        }
+    }
+
+    @Override
+    protected void compute() {
+        try {
+            this.solve(getNextGrids(grid));
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
     }
 
     public ArrayList<Grid> getNextGrids(Grid g) throws CloneNotSupportedException {
         ArrayList<Grid> grids = new ArrayList<>();
 
         for (int i = 0; i < 25; i++) {
-            Grid clone = (Grid) g.clone();
-            Block temp = (Block) clone.getBlocks().getList()[i].clone();
-            ArrayList<Block> tempNeighbors = clone.getBlockNeighbors(temp, new ArrayList<>());
+            if (g.getBlocks().getList()[i].getColor() != 3) {
+                Grid clone = (Grid) g.clone();
+                Block temp = clone.getBlocks().getList()[i];
+                ArrayList<Block> tempNeighbors = clone.getBlockNeighbors(temp, new ArrayList<>());
 
-            if (tempNeighbors.size() >= 20){
-                done = true;
-            } else if (tempNeighbors.size() > 1 && tempNeighbors.get(0).getColor() != 3) {
+                if (tempNeighbors.size() > 1){
 
-                Move move = new Move(tempNeighbors.get(0).getColor(),tempNeighbors.size(),count);
+                    Move move = new Move(tempNeighbors.get(0).getColor(), tempNeighbors.size(), tempNeighbors.get(0).getX(), tempNeighbors.get(0).getY(), i);
 
-                clone.removeBlocks(tempNeighbors);
-                move.setScore(clone.getScore());
-                System.out.println(move.toString());
+                    clone.removeBlocks(tempNeighbors);
+                    move.setScore(clone.getScore());
+                    moves.get(i).add(move);
+                    System.out.println(move.toString());
 
 
-                grids.add((Grid) clone.clone());
+                    grids.add((Grid) clone.clone());
+                }
             }
         }
 
@@ -36,27 +61,48 @@ public class Solutions{
     }
 
     public void solve(ArrayList<Grid> grids) throws CloneNotSupportedException {
-        if (blocksLeft == 24){
-            done = true;
-        }
-        while (count !=100){
-            for (Grid g : grids){
-                int blocks = 0;
-                count++;
-                for (Block block : g.getBlocks().getList()){
-                    if (block.getColor() != 3){
-                        ++blocks;
+        while (!done) {
+            if (!grids.isEmpty()) {
+                ArrayList<Integer> currentColors = new ArrayList<>();
+
+                for (Grid g : grids) {
+                    int blocks = 0;
+                    count++;
+                    for (Block block : g.getBlocks().getList()) {
+                        if (block.getColor() == 3) {
+                            ++blocks;
+                        } else {
+                            currentColors.add(block.getColor());
+                        }
                     }
-                }
+                    if (previousColors.containsAll(currentColors)){
+                        done = true;
+                    }else {
+                        previousColors = new ArrayList<>();
+                        previousColors.addAll(currentColors);
+                    }
 
-                if (blocks <=6 ){
-                    blocksLeft++;
-                }
+                    if (blocks == 24) {
+                        done = true;
+                    }
 
-                System.out.println("Solving grid: " + count + " Score: " + g.getScore() + "   blocks left: " + blocks);
-                solve(getNextGrids(g));
+                    if (blocks <= 6) {
+                        blocksLeft++;
+                    }
+
+                    System.out.println("Solving grid: " + count + " Score: " + g.getScore() + "   blocks left: " + (25 - blocks));
+                    solve(getNextGrids(g));
+                }
+            } else{
+                break;
             }
         }
+        /*for (Map.Entry<Integer,ArrayList<Move>> entry : moves.entrySet()){
+            for (Move m: entry.getValue()) {
+                System.out.println(m);
+            }
+        }*/
+
     }
 }
 
@@ -65,8 +111,10 @@ class Move{
     int size;
     int count;
     int score;
+    int x;
+    int y;
 
-    public Move(int c, int size, int count) {
+    public Move(int c, int size, int x, int y, int count) {
         if (c == 0){
             color = "red";
         } else if(c == 1){
@@ -77,6 +125,9 @@ class Move{
 
         this.size = size;
 
+        this.x =x;
+        this.y =y;
+
         this.count = count;
     }
 
@@ -86,7 +137,7 @@ class Move{
 
     @Override
     public String toString() {
-        return "Move " + count + ": group of " + size + " " + color + " blocks; Current score: " + score;
+        return "Move " + count + ": group of " + size + " " + color + " blocks at [" + x + "," + y + "] ; Current score: " + score;
     }
 }
 

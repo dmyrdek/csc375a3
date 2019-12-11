@@ -140,7 +140,8 @@ public class Grid implements Cloneable{
         Grid clone = (Grid) super.clone();
         Blocks cloneBlocks = (Blocks) blocks.clone();
         clone.setBlocks(cloneBlocks);
-        clone.score = score;
+        clone.setBlockNeighbors();
+        clone.score = this.score;
         return clone;
     }
 }

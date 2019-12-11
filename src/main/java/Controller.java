@@ -11,6 +11,7 @@ import javafx.scene.text.Text;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
+import java.util.concurrent.ForkJoinPool;
 
 public class Controller implements Initializable {
     @FXML
@@ -22,6 +23,8 @@ public class Controller implements Initializable {
     @FXML
     JFXButton refresh;
 
+    @FXML
+    JFXButton solve;
 
 
     private Grid blockGrid;
@@ -29,26 +32,18 @@ public class Controller implements Initializable {
 
     public void initialize(URL location, ResourceBundle resources) {
         createGrid(true);
+
         refresh.setOnAction(event -> {
-            /*grid.getColumnConstraints().clear();
+            grid.getColumnConstraints().clear();
             grid.getRowConstraints().clear();
-            createGrid(true);*/
+            createGrid(true);
+        });
 
-            Task<Void> task = new Task<Void>() {
-                @Override
-                protected Void call() {
-                    try {
-                        Solutions boardToSolve = new Solutions();
-                        boardToSolve.solve(boardToSolve.getNextGrids((Grid) blockGrid.clone()));
-                    } catch (CloneNotSupportedException e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                }
-            };
+        solve.setOnAction(event -> {
+            Solutions solutions = new Solutions(blockGrid);
 
-            new Thread(task).start();
-
+            ForkJoinPool childBoardSolver = new ForkJoinPool();
+            childBoardSolver.invoke(solutions);
         });
     }
 
