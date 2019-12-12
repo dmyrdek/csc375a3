@@ -6,7 +6,7 @@ import java.util.concurrent.RecursiveAction;
 public class Solutions extends RecursiveAction {
     private Grid grid;
     private static volatile ArrayList<ArrayList<Block>> allBlockNeighbors = new ArrayList<>();
-    private boolean done = false;
+    private volatile boolean done = false;
     int count = 0;
     Map<Integer,ArrayList<Move>> moves = new HashMap<>();
     int blocksLeft = 0;
@@ -27,18 +27,20 @@ public class Solutions extends RecursiveAction {
     @Override
     protected void compute() {
         try {
-            this.solve(getNextGrids(grid));
+            if (!done) {
+                this.solve(getNextGrids(new Solutions(grid)));
+            }
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();
         }
     }
 
-    public ArrayList<Grid> getNextGrids(Grid g) throws CloneNotSupportedException {
-        ArrayList<Grid> grids = new ArrayList<>();
+    public ArrayList<Solutions> getNextGrids(Solutions g) throws CloneNotSupportedException {
+        ArrayList<Solutions> grids = new ArrayList<>();
 
         for (int i = 0; i < 25; i++) {
-            if (g.getBlocks().getList()[i].getColor() != 3) {
-                Grid clone = (Grid) g.clone();
+            if (g.grid.getBlocks().getList()[i].getColor() != 3) {
+                Grid clone = (Grid) g.grid.clone();
                 Block temp = clone.getBlocks().getList()[i];
                 ArrayList<Block> tempNeighbors = clone.getBlockNeighbors(temp, new ArrayList<>());
 
@@ -52,23 +54,24 @@ public class Solutions extends RecursiveAction {
                     System.out.println(move.toString());
 
 
-                    grids.add((Grid) clone.clone());
+                    new Solutions((Grid) clone.clone()).fork();
                 }
             }
         }
 
+
         return grids;
     }
 
-    public void solve(ArrayList<Grid> grids) throws CloneNotSupportedException {
+    public void solve(ArrayList<Solutions> grids) throws CloneNotSupportedException {
         while (!done) {
             if (!grids.isEmpty()) {
                 ArrayList<Integer> currentColors = new ArrayList<>();
 
-                for (Grid g : grids) {
+                for (Solutions s : grids) {
                     int blocks = 0;
                     count++;
-                    for (Block block : g.getBlocks().getList()) {
+                    for (Block block : s.grid.getBlocks().getList()) {
                         if (block.getColor() == 3) {
                             ++blocks;
                         } else {
@@ -90,8 +93,8 @@ public class Solutions extends RecursiveAction {
                         blocksLeft++;
                     }
 
-                    System.out.println("Solving grid: " + count + " Score: " + g.getScore() + "   blocks left: " + (25 - blocks));
-                    solve(getNextGrids(g));
+                    System.out.println("Solving grid: " + count + " Score: " + s.grid.getScore() + "   blocks left: " + (25 - blocks));
+                    solve(getNextGrids(s));
                 }
             } else{
                 break;
